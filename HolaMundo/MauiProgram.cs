@@ -1,4 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
+using HolaMundo.Services;
+using HolaMundo.ViewModels;
+using HolaMundo.Views;
 
 namespace HolaMundo
 {
@@ -16,8 +19,25 @@ namespace HolaMundo
                 });
 
 #if DEBUG
-    		builder.Logging.AddDebug();
+            builder.Logging.AddDebug();
 #endif
+
+            // Servicios (Singleton)
+            builder.Services.AddSingleton<SesionActual>();
+            builder.Services.AddSingleton<ParadasDatabase>();
+            builder.Services.AddSingleton<RepartidorDatabase>();
+            builder.Services.AddSingleton<TurnoDatabase>();
+            builder.Services.AddSingleton<UbicacionService>();
+
+            // ViewModels y Páginas (Transient)
+            builder.Services.AddTransient<LoginViewModel>();
+            builder.Services.AddTransient<LoginPage>();
+
+            builder.Services.AddTransient<JornadaViewModel>();
+            builder.Services.AddTransient<JornadaPage>();
+
+            builder.Services.AddTransient<ParadaDetalleViewModel>();
+            builder.Services.AddTransient<ParadaDetallePage>();
 
             return builder.Build();
         }
