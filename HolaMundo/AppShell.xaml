@@ -5,19 +5,26 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:views="clr-namespace:HolaMundo.Views"
     xmlns:local="clr-namespace:HolaMundo"
-    Title="Última Milla">
+    Title="Última Milla"
+    FlyoutBehavior="Disabled">
 
-    <!-- LoginPage primero: es la pantalla con la que arranca la app -->
+    <!-- El login queda fuera del TabBar: no muestra pestañas -->
     <ShellContent
-        Title="Login"
         Route="LoginPage"
         ContentTemplate="{DataTemplate views:LoginPage}" />
 
-    <!-- JornadaPage registrada con Route="JornadaPage" -->
-    <ShellContent
-        Title="Mi Jornada"
-        Route="JornadaPage"
-        ContentTemplate="{DataTemplate views:JornadaPage}" />
+    <!-- Cada ShellContent dentro del TabBar es una pestaña -->
+    <TabBar>
+        <ShellContent
+            Title="Jornada"
+            Route="JornadaPage"
+            ContentTemplate="{DataTemplate views:JornadaPage}" />
+
+        <ShellContent
+            Title="Histórico"
+            Route="HistoricoPage"
+            ContentTemplate="{DataTemplate views:HistoricoPage}" />
+    </TabBar>
 
     <!-- Conservamos MainPage original -->
     <ShellContent

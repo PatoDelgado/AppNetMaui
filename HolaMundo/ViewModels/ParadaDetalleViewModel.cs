@@ -17,9 +17,10 @@ public partial class ParadaDetalleViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(EsEditable))]
     [NotifyPropertyChangedFor(nameof(EsFallida))]
     [NotifyPropertyChangedFor(nameof(EsEntregada))]
+    [NotifyPropertyChangedFor(nameof(TiempoEnFallo))]
     [NotifyCanExecuteChangedFor(nameof(MarcarEntregadaCommand))]
     [NotifyCanExecuteChangedFor(nameof(MarcarFallidaCommand))]
-    [NotifyCanExecuteChangedFor(nameof(ReintentarEntregaCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ReintentarCommand))]
     private Parada? _parada;
 
     [ObservableProperty]
@@ -30,15 +31,16 @@ public partial class ParadaDetalleViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(EsEditable))]
     [NotifyCanExecuteChangedFor(nameof(MarcarEntregadaCommand))]
     [NotifyCanExecuteChangedFor(nameof(MarcarFallidaCommand))]
-    [NotifyCanExecuteChangedFor(nameof(ReintentarEntregaCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ReintentarCommand))]
     private bool _isGuardando = false;
 
     [ObservableProperty]
     private string _mensajeEstado = string.Empty;
 
-    public bool EsEntregada => Parada != null && Parada.Estado == "Entregada";
-    public bool EsFallida => Parada != null && Parada.Estado == "Fallida";
-    public bool EsEditable => Parada != null && Parada.Estado != "Entregada" && !IsGuardando;
+    public bool EsEntregada => Parada != null && Parada.Estado == EstadoEntrega.Entregada;
+    public bool EsFallida => Parada != null && Parada.Estado == EstadoEntrega.Fallida;
+    public bool EsEditable => Parada != null && Parada.Estado != EstadoEntrega.Entregada && !IsGuardando;
+    public string TiempoEnFallo => Parada?.TiempoEnFalloTexto ?? string.Empty;
 
     public ParadaDetalleViewModel(ParadasDatabase paradasDatabase)
     {
@@ -65,22 +67,30 @@ public partial class ParadaDetalleViewModel : ObservableObject
         OnPropertyChanged(nameof(EsEditable));
         OnPropertyChanged(nameof(EsFallida));
         OnPropertyChanged(nameof(EsEntregada));
+        OnPropertyChanged(nameof(TiempoEnFallo));
         MarcarEntregadaCommand.NotifyCanExecuteChanged();
         MarcarFallidaCommand.NotifyCanExecuteChanged();
-        ReintentarEntregaCommand.NotifyCanExecuteChanged();
+        ReintentarCommand.NotifyCanExecuteChanged();
     }
 
-    private bool PuedeMarcarEntregada() => !IsGuardando && EsEditable;
+    private bool PuedeMarcarEntregada() =>
+        !IsGuardando && Parada is not null && ReglasEntrega.PuedeEntregar(Parada);
 
     [RelayCommand(CanExecute = nameof(PuedeMarcarEntregada))]
     private async Task MarcarEntregadaAsync()
     {
         if (Parada is null || IsGuardando) return;
 
+        if (!ReglasEntrega.PuedeEntregar(Parada))
+        {
+            MensajeEstado = "Esta parada ya no está pendiente.";
+            return;
+        }
+
         try
         {
             IsGuardando = true;
-            Parada.Estado = "Entregada";
+            Parada.Estado = EstadoEntrega.Entregada;
             Parada.ModificadoEn = DateTime.Now;
             await _paradasDatabase.SaveParadaAsync(Parada);
             await Shell.Current.GoToAsync("..");
@@ -95,12 +105,19 @@ public partial class ParadaDetalleViewModel : ObservableObject
         }
     }
 
-    private bool PuedeMarcarFallida() => !IsGuardando && EsEditable && !string.IsNullOrWhiteSpace(RazonFallo);
+    private bool PuedeMarcarFallida() =>
+        !IsGuardando && Parada is not null && ReglasEntrega.PuedeFallar(Parada) && !string.IsNullOrWhiteSpace(RazonFallo);
 
     [RelayCommand(CanExecute = nameof(PuedeMarcarFallida))]
     private async Task MarcarFallidaAsync()
     {
         if (Parada is null || IsGuardando) return;
+
+        if (!ReglasEntrega.PuedeFallar(Parada))
+        {
+            MensajeEstado = "Esta parada ya no está pendiente.";
+            return;
+        }
 
         if (string.IsNullOrWhiteSpace(RazonFallo))
         {
@@ -111,7 +128,7 @@ public partial class ParadaDetalleViewModel : ObservableObject
         try
         {
             IsGuardando = true;
-            Parada.Estado = "Fallida";
+            Parada.Estado = EstadoEntrega.Fallida;
             Parada.RazonFallo = RazonFallo;
             Parada.ModificadoEn = DateTime.Now;
             await _paradasDatabase.SaveParadaAsync(Parada);
@@ -127,17 +144,24 @@ public partial class ParadaDetalleViewModel : ObservableObject
         }
     }
 
-    private bool PuedeReintentar() => !IsGuardando && EsFallida;
+    private bool PuedeReintentar() =>
+        !IsGuardando && Parada is not null && ReglasEntrega.PuedeReintentar(Parada);
 
     [RelayCommand(CanExecute = nameof(PuedeReintentar))]
-    private async Task ReintentarEntregaAsync()
+    private async Task ReintentarAsync()
     {
         if (Parada is null || IsGuardando) return;
+
+        if (!ReglasEntrega.PuedeReintentar(Parada))
+        {
+            MensajeEstado = "Esa parada no está fallida.";
+            return;
+        }
 
         try
         {
             IsGuardando = true;
-            Parada.Estado = "Pendiente";
+            Parada.Estado = EstadoEntrega.Pendiente;
             Parada.RazonFallo = null;
             RazonFallo = string.Empty;
             Parada.ModificadoEn = DateTime.Now;

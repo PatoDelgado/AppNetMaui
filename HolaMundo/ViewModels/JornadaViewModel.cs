@@ -45,13 +45,25 @@ public partial class JornadaViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(TextoBotonTurno))]
     private Turno? _turnoActivo;
 
-    // Reto extra (+2 pts): Toggle para ocultar entregadas
+    // Reto extra 6.1: Toggle para ocultar entregadas
     [ObservableProperty]
     private bool _ocultarEntregadas = false;
 
-    // Reto 6.5: Ordenar por distancia (más cercana primero)
+    // Reto opcional Ejercicio 7: Filtro por estado (Todas, Pendientes, Entregadas, Fallidas)
+    [ObservableProperty]
+    private string _filtroSeleccionado = "Todas";
+
+    // Reto 6.5: Ordenar numéricamente por distancia (más cercana primero)
     [ObservableProperty]
     private bool _ordenarPorCercania = false;
+
+    public ObservableCollection<string> OpcionesFiltro { get; } = new()
+    {
+        "Todas",
+        "Pendientes",
+        "Entregadas",
+        "Fallidas"
+    };
 
     public string TextoBotonTurno => TurnoActivo is null ? "Iniciar turno" : "Terminar turno";
 
@@ -73,6 +85,15 @@ public partial class JornadaViewModel : ObservableObject
 
     partial void OnOcultarEntregadasChanged(bool value)
     {
+        if (value && FiltroSeleccionado == "Entregadas")
+        {
+            FiltroSeleccionado = "Todas";
+        }
+        AplicarFiltroYOrden();
+    }
+
+    partial void OnFiltroSeleccionadoChanged(string value)
+    {
         AplicarFiltroYOrden();
     }
 
@@ -83,20 +104,28 @@ public partial class JornadaViewModel : ObservableObject
 
     private void AplicarFiltroYOrden()
     {
-        var filtradas = OcultarEntregadas
-            ? _paradasCompletas.Where(p => p.Estado != "Entregada")
-            : _paradasCompletas;
+        IEnumerable<Parada> filtradas = _paradasCompletas;
 
+        // Filtro por Switch "Ocultar entregadas"
+        if (OcultarEntregadas)
+        {
+            filtradas = filtradas.Where(p => p.Estado != EstadoEntrega.Entregada);
+        }
+
+        // Filtro por selector de estado (Reto Ejercicio 7)
+        filtradas = FiltroSeleccionado switch
+        {
+            "Pendientes" => filtradas.Where(p => p.Estado == EstadoEntrega.Pendiente),
+            "Entregadas" => filtradas.Where(p => p.Estado == EstadoEntrega.Entregada),
+            "Fallidas"   => filtradas.Where(p => p.Estado == EstadoEntrega.Fallida),
+            _            => filtradas,
+        };
+
+        // Ordenamiento numérico (Reto Ejercicio 6.5)
         IEnumerable<Parada> ordenadas;
         if (OrdenarPorCercania)
         {
-            // Ordena paradas con distancia primero, luego por número
-            ordenadas = filtradas.OrderBy(p =>
-            {
-                if (double.TryParse(p.DistanciaTexto.Replace(" km", "").Trim(), out var d))
-                    return d;
-                return double.MaxValue;
-            }).ThenBy(p => p.Numero);
+            ordenadas = filtradas.OrderBy(p => p.DistanciaKm).ThenBy(p => p.Numero);
         }
         else
         {
@@ -165,10 +194,12 @@ public partial class JornadaViewModel : ObservableObject
                     var km = Distancia.EnKilometros(
                         miUbicacion.Latitude, miUbicacion.Longitude,
                         p.Latitud.Value, p.Longitud.Value);
+                    p.DistanciaKm = km;
                     p.DistanciaTexto = $"{km:F1} km";
                 }
                 else
                 {
+                    p.DistanciaKm = double.MaxValue;
                     p.DistanciaTexto = "Sin ubicación";
                 }
             }
@@ -177,7 +208,7 @@ public partial class JornadaViewModel : ObservableObject
             AplicarFiltroYOrden();
 
             TotalEntregas = _paradasCompletas.Count;
-            EntregasCompletadas = _paradasCompletas.Count(p => p.Estado == "Entregada");
+            EntregasCompletadas = _paradasCompletas.Count(p => p.Estado == EstadoEntrega.Entregada);
 
             if (miUbicacion is not null)
             {
@@ -219,15 +250,14 @@ public partial class JornadaViewModel : ObservableObject
         var desdeMes = DateTime.Now.AddDays(-30);
         var todas = await _paradasDatabase.GetParadasAsync();
 
-        EntregasEstaSemana = todas.Count(p => p.Estado == "Entregada" && p.ModificadoEn >= desdeSemana);
-        EntregasEsteMes = todas.Count(p => p.Estado == "Entregada" && p.ModificadoEn >= desdeMes);
+        EntregasEstaSemana = todas.Count(p => p.Estado == EstadoEntrega.Entregada && p.ModificadoEn >= desdeSemana);
+        EntregasEsteMes = todas.Count(p => p.Estado == EstadoEntrega.Entregada && p.ModificadoEn >= desdeMes);
     }
 
     // Reto 6.2: Cerrar sesión
     [RelayCommand]
     private async Task CerrarSesionAsync()
     {
-        Preferences.Default.Remove("RepartidorActualId");
         _sesionActual.RepartidorId = 0;
         await Shell.Current.GoToAsync("//LoginPage");
     }
@@ -240,7 +270,7 @@ public partial class JornadaViewModel : ObservableObject
             RepartidorId = _sesionActual.RepartidorId,
             Cliente = "Farmacia San Juan",
             Direccion = "Av. Hidalgo 123",
-            Estado = "Entregada",
+            Estado = EstadoEntrega.Entregada,
             Latitud = 20.6736,
             Longitud = -103.3440,
             ModificadoEn = DateTime.Now
@@ -252,7 +282,7 @@ public partial class JornadaViewModel : ObservableObject
             RepartidorId = _sesionActual.RepartidorId,
             Cliente = "Abarrotes La Esquina",
             Direccion = "Calle Morelos 45",
-            Estado = "Pendiente",
+            Estado = EstadoEntrega.Pendiente,
             Latitud = 20.6775,
             Longitud = -103.3490,
             ModificadoEn = DateTime.Now
@@ -264,7 +294,7 @@ public partial class JornadaViewModel : ObservableObject
             RepartidorId = _sesionActual.RepartidorId,
             Cliente = "Consultorio Dra. Ruiz",
             Direccion = "Blvd. Constitucion 890",
-            Estado = "Pendiente",
+            Estado = EstadoEntrega.Pendiente,
             Latitud = 20.6810,
             Longitud = -103.3550,
             ModificadoEn = DateTime.Now
@@ -276,7 +306,7 @@ public partial class JornadaViewModel : ObservableObject
             RepartidorId = _sesionActual.RepartidorId,
             Cliente = "Don Panchito Perez",
             Direccion = "Ciudad Universitaria, Sistemas 890",
-            Estado = "Pendiente",
+            Estado = EstadoEntrega.Pendiente,
             Latitud = 20.6550,
             Longitud = -103.3250,
             ModificadoEn = DateTime.Now
@@ -288,7 +318,7 @@ public partial class JornadaViewModel : ObservableObject
             RepartidorId = _sesionActual.RepartidorId,
             Cliente = "Eulalio de la Cruz",
             Direccion = "Colon 888, Jalisco",
-            Estado = "Entregada",
+            Estado = EstadoEntrega.Entregada,
             Latitud = 20.6650,
             Longitud = -103.3600,
             ModificadoEn = DateTime.Now

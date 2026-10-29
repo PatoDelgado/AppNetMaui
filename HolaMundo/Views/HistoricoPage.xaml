@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:HolaMundo.ViewModels"
+             xmlns:models="clr-namespace:HolaMundo.Models"
+             x:Class="HolaMundo.Views.HistoricoPage"
+             x:DataType="vm:HistoricoViewModel"
+             Title="Histórico">
+
+    <Grid RowDefinitions="Auto,Auto,Auto,*" Padding="16" RowSpacing="16">
+
+        <Grid Grid.Row="0" ColumnDefinitions="*,*" ColumnSpacing="12">
+            <Border Grid.Column="0" Padding="14" StrokeShape="RoundRectangle 10"
+                    Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="{Binding EntregasEstaSemana}" FontSize="32" FontAttributes="Bold" TextColor="#2E7D32" />
+                    <Label Text="Últimos 7 días" Style="{StaticResource TextoSecundario}" />
+                </VerticalStackLayout>
+            </Border>
+            <Border Grid.Column="1" Padding="14" StrokeShape="RoundRectangle 10"
+                    Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="{Binding EntregasEsteMes}" FontSize="32" FontAttributes="Bold" TextColor="#1565C0" />
+                    <Label Text="Este mes" Style="{StaticResource TextoSecundario}" />
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+
+        <Label Grid.Row="1" Text="{Binding MensajeEstado}" TextColor="IndianRed" FontSize="12" />
+        <Label Grid.Row="2" Text="Entregas de este mes" FontAttributes="Bold" FontSize="16" />
+
+        <CollectionView Grid.Row="3" ItemsSource="{Binding EntregasDelMes}">
+            <CollectionView.EmptyView>
+                <Label Text="Aún no hay entregas este mes."
+                       HorizontalOptions="Center" VerticalOptions="Center" TextColor="Gray" FontSize="14" />
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:Parada">
+                    <Border Padding="12" Margin="0,4" StrokeShape="RoundRectangle 8"
+                            Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}">
+                        <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                            <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                <Label Text="{Binding Cliente}" FontAttributes="Bold" FontSize="15" />
+                                <Label Text="{Binding Direccion}" Style="{StaticResource TextoSecundario}" FontSize="12" />
+                            </VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="1" HorizontalOptions="End" VerticalOptions="Center">
+                                <Label Text="✅ Entregada" TextColor="#2E7D32" FontAttributes="Bold" FontSize="12" />
+                                <Label Text="{Binding ModificadoEn, StringFormat='{0:dd/MM HH:mm}'}" FontSize="11" TextColor="Gray" HorizontalOptions="End" />
+                            </VerticalStackLayout>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <ActivityIndicator Grid.RowSpan="4" IsRunning="{Binding EstaCargando}"
+                           IsVisible="{Binding EstaCargando}"
+                           Color="#1C7293"
+                           WidthRequest="36" HeightRequest="36"
+                           HorizontalOptions="Center" VerticalOptions="Center" />
+    </Grid>
+</ContentPage>

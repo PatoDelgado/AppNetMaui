@@ -36,6 +36,9 @@ namespace HolaMundo
             builder.Services.AddTransient<JornadaViewModel>();
             builder.Services.AddTransient<JornadaPage>();
 
+            builder.Services.AddTransient<HistoricoViewModel>();
+            builder.Services.AddTransient<HistoricoPage>();
+
             builder.Services.AddTransient<ParadaDetalleViewModel>();
             builder.Services.AddTransient<ParadaDetallePage>();
 
