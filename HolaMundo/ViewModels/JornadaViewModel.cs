@@ -257,6 +257,27 @@ public partial class JornadaViewModel : ObservableObject
         await Shell.Current.GoToAsync("//LoginPage");
     }
 
+    // Botón para generar nuevas paradas pendientes y hacer pruebas
+    [RelayCommand]
+    private async Task AgregarParadaPruebaAsync()
+    {
+        int siguienteNumero = _paradasCompletas.Count + 1;
+        var nueva = new Parada
+        {
+            Numero = siguienteNumero,
+            RepartidorId = _sesionActual.RepartidorId,
+            Cliente = $"Cliente Prueba #{siguienteNumero}",
+            Direccion = $"Av. Revolución #{siguienteNumero * 100}",
+            Estado = EstadoEntrega.Pendiente,
+            Latitud = 20.6736 + (siguienteNumero * 0.003),
+            Longitud = -103.3440 + (siguienteNumero * 0.003),
+            ModificadoEn = DateTime.Now
+        };
+
+        await _paradasDatabase.SaveParadaAsync(nueva);
+        await RefrescaParadas();
+    }
+
     private async Task InventaParadas()
     {
         await _paradasDatabase.SaveParadaAsync(new Parada

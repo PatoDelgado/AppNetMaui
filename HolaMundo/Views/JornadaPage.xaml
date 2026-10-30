@@ -26,17 +26,24 @@
             </HorizontalStackLayout>
         </VerticalStackLayout>
 
+        <!-- Controles de actualización y botón para agregar paradas de prueba -->
         <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="4" HorizontalOptions="End">
-            <Button Text="Actualizar"
-                    Command="{Binding RefrescaParadasCommand}"
-                    Padding="12,5"
-                    FontSize="13"
-                    HorizontalOptions="End" />
+            <HorizontalStackLayout Spacing="6" HorizontalOptions="End">
+                <Button Text="+ Parada"
+                        Command="{Binding AgregarParadaPruebaCommand}"
+                        Padding="8,5"
+                        FontSize="12"
+                        BackgroundColor="#00897B" />
+                <Button Text="Actualizar"
+                        Command="{Binding RefrescaParadasCommand}"
+                        Padding="10,5"
+                        FontSize="12" />
+            </HorizontalStackLayout>
             <ActivityIndicator IsRunning="{Binding IsRefrescando}"
                                IsVisible="{Binding IsRefrescando}"
                                HorizontalOptions="End"
-                               WidthRequest="22"
-                               HeightRequest="22" />
+                               WidthRequest="20"
+                               HeightRequest="20" />
             <Label Text="{Binding MensajeEstado}"
                    Style="{StaticResource TextoSecundario}"
                    FontSize="11"
