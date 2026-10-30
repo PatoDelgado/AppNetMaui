@@ -10,7 +10,6 @@
     <Grid Padding="16" RowDefinitions="Auto,Auto,Auto,*" ColumnDefinitions="*,*"
           RowSpacing="12" ColumnSpacing="10">
 
-        <!-- Encabezado: Saludo, Fecha, Botón de Turno y Cerrar Sesión -->
         <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="4">
             <Label Text="{Binding Saludo}" FontSize="20" FontAttributes="Bold" />
             <Label x:Name="FechaLabel" Style="{StaticResource TextoSecundario}" />
@@ -27,7 +26,6 @@
             </HorizontalStackLayout>
         </VerticalStackLayout>
 
-        <!-- Controles de actualización -->
         <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="4" HorizontalOptions="End">
             <Button Text="Actualizar"
                     Command="{Binding RefrescaParadasCommand}"
@@ -45,7 +43,6 @@
                    HorizontalOptions="End" />
         </VerticalStackLayout>
 
-        <!-- Tarjetas de resumen del día y período -->
         <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource BorderPrincipal}">
             <VerticalStackLayout Spacing="3">
                 <Label Text="Entregas de hoy" Style="{StaticResource TextoSecundario}" />
@@ -70,7 +67,7 @@
             </VerticalStackLayout>
         </Border>
 
-        <!-- Barra de Filtros: Filtro de estado (Reto Ejercicio 7) + Switches (Reto 6.1 y 6.5) -->
+        <!-- O2: Filtro por estado (Reto O2) y Switches -->
         <Border Grid.Row="2" Grid.ColumnSpan="2"
                 Padding="10,6"
                 StrokeShape="RoundRectangle 8"
@@ -78,8 +75,8 @@
                 BackgroundColor="{AppThemeBinding Light=#F4F6F9, Dark=#1E293B}">
             <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto,Auto" RowSpacing="6" ColumnSpacing="8" VerticalOptions="Center">
                 
-                <!-- Selector de Filtro de Estado (Reto Ejercicio 7) -->
-                <Label Grid.Row="0" Grid.Column="0" Text="Filtrar:" VerticalOptions="Center" FontAttributes="Bold" FontSize="12" />
+                <!-- O2: Selector de Filtro de Estado -->
+                <Label Grid.Row="0" Grid.Column="0" Text="Filtrar (O2):" VerticalOptions="Center" FontAttributes="Bold" FontSize="12" />
                 <Picker Grid.Row="0" Grid.Column="1"
                         ItemsSource="{Binding OpcionesFiltro}"
                         SelectedItem="{Binding FiltroSeleccionado}"
@@ -87,7 +84,6 @@
                         HeightRequest="36"
                         VerticalOptions="Center" />
 
-                <!-- Toggle Ordenar por Cercanía (Reto 6.5) -->
                 <Label Grid.Row="0" Grid.Column="2"
                        Text="Más cercanas (GPS)"
                        VerticalOptions="Center"
@@ -96,9 +92,8 @@
                         IsToggled="{Binding OrdenarPorCercania}"
                         VerticalOptions="Center" />
 
-                <!-- Toggle Ocultar Entregadas (+2 pts extra) -->
                 <HorizontalStackLayout Grid.Row="1" Grid.ColumnSpan="4" Spacing="10" VerticalOptions="Center">
-                    <Label Text="Ocultar entregadas (+2 pts extra):"
+                    <Label Text="Ocultar entregadas:"
                            VerticalOptions="Center"
                            FontSize="12"
                            FontAttributes="Bold" />
@@ -108,7 +103,6 @@
             </Grid>
         </Border>
 
-        <!-- El listado: fila 3, dos columnas -->
         <CollectionView Grid.Row="3" Grid.ColumnSpan="2"
                         ItemsSource="{Binding Paradas}"
                         SelectedItem="{Binding ParadaSeleccionada}"
@@ -131,21 +125,26 @@
                                 <TapGestureRecognizer Tapped="OnParadaTapped" />
                             </Grid.GestureRecognizers>
 
-                            <!-- Numero de parada -->
                             <Border Grid.Column="0" BackgroundColor="#1C7293"
                                     WidthRequest="34" HeightRequest="34" StrokeShape="RoundRectangle 17">
                                 <Label Text="{Binding Numero}" FontAttributes="Bold"
                                        HorizontalOptions="Center" VerticalOptions="Center" TextColor="White" />
                             </Border>
 
-                            <!-- Cliente + Direccion + Distancia -->
                             <VerticalStackLayout Grid.Column="1" Spacing="2">
                                 <Label Text="{Binding Cliente}" Style="{StaticResource ClienteLabel}" />
                                 <Label Text="{Binding Direccion}" Style="{StaticResource TextoListas}" />
-                                <Label Text="{Binding DistanciaTexto, StringFormat='📍 {0}'}" FontSize="11" TextColor="#0288D1" FontAttributes="Bold" />
+                                <HorizontalStackLayout Spacing="8">
+                                    <Label Text="{Binding DistanciaTexto, StringFormat='📍 {0}'}" FontSize="11" TextColor="#0288D1" FontAttributes="Bold" />
+                                    <!-- N11: Badge en lista de intentos fallidos si tiene alguno -->
+                                    <Label Text="{Binding IntentosFallidos, StringFormat='⚠️ {0} fallo(s)'}"
+                                           TextColor="#E65100"
+                                           FontSize="11"
+                                           FontAttributes="Bold"
+                                           IsVisible="{Binding IntentosFallidos}" />
+                                </HorizontalStackLayout>
                             </VerticalStackLayout>
 
-                            <!-- Estado mediante IValueConverters (Ejercicio 7 Parte 4) -->
                             <Label Grid.Column="2"
                                    Text="{Binding Estado, Converter={StaticResource EstadoADisplay}}"
                                    TextColor="{Binding Estado, Converter={StaticResource EstadoAColor}}"

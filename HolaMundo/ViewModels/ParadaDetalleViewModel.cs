@@ -18,6 +18,7 @@ public partial class ParadaDetalleViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(EsFallida))]
     [NotifyPropertyChangedFor(nameof(EsEntregada))]
     [NotifyPropertyChangedFor(nameof(TiempoEnFallo))]
+    [NotifyPropertyChangedFor(nameof(TieneIntentosFallidos))]
     [NotifyCanExecuteChangedFor(nameof(MarcarEntregadaCommand))]
     [NotifyCanExecuteChangedFor(nameof(MarcarFallidaCommand))]
     [NotifyCanExecuteChangedFor(nameof(ReintentarCommand))]
@@ -26,6 +27,10 @@ public partial class ParadaDetalleViewModel : ObservableObject
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(MarcarFallidaCommand))]
     private string _razonFallo = string.Empty;
+
+    // N9: Guardar quién recibió el paquete al entregar
+    [ObservableProperty]
+    private string _quienRecibio = string.Empty;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(EsEditable))]
@@ -41,6 +46,7 @@ public partial class ParadaDetalleViewModel : ObservableObject
     public bool EsFallida => Parada != null && Parada.Estado == EstadoEntrega.Fallida;
     public bool EsEditable => Parada != null && Parada.Estado != EstadoEntrega.Entregada && !IsGuardando;
     public string TiempoEnFallo => Parada?.TiempoEnFalloTexto ?? string.Empty;
+    public bool TieneIntentosFallidos => Parada != null && Parada.IntentosFallidos > 0;
 
     public ParadaDetalleViewModel(ParadasDatabase paradasDatabase)
     {
@@ -55,19 +61,22 @@ public partial class ParadaDetalleViewModel : ObservableObject
     private async Task CargarAsync()
     {
         Parada = await _paradasDatabase.GetParadaByIdAsync(ParadaId);
-        if (Parada != null && !string.IsNullOrEmpty(Parada.RazonFallo))
+        if (Parada != null)
         {
-            RazonFallo = Parada.RazonFallo;
+            RazonFallo = Parada.RazonFallo ?? string.Empty;
+            QuienRecibio = Parada.QuienRecibio ?? string.Empty;
         }
         else
         {
             RazonFallo = string.Empty;
+            QuienRecibio = string.Empty;
         }
 
         OnPropertyChanged(nameof(EsEditable));
         OnPropertyChanged(nameof(EsFallida));
         OnPropertyChanged(nameof(EsEntregada));
         OnPropertyChanged(nameof(TiempoEnFallo));
+        OnPropertyChanged(nameof(TieneIntentosFallidos));
         MarcarEntregadaCommand.NotifyCanExecuteChanged();
         MarcarFallidaCommand.NotifyCanExecuteChanged();
         ReintentarCommand.NotifyCanExecuteChanged();
@@ -91,6 +100,8 @@ public partial class ParadaDetalleViewModel : ObservableObject
         {
             IsGuardando = true;
             Parada.Estado = EstadoEntrega.Entregada;
+            // N9: Asignar quién recibió el paquete
+            Parada.QuienRecibio = string.IsNullOrWhiteSpace(QuienRecibio) ? Parada.Cliente : QuienRecibio.Trim();
             Parada.ModificadoEn = DateTime.Now;
             await _paradasDatabase.SaveParadaAsync(Parada);
             await Shell.Current.GoToAsync("..");
@@ -108,6 +119,7 @@ public partial class ParadaDetalleViewModel : ObservableObject
     private bool PuedeMarcarFallida() =>
         !IsGuardando && Parada is not null && ReglasEntrega.PuedeFallar(Parada) && !string.IsNullOrWhiteSpace(RazonFallo);
 
+    // N3: Confirmar antes de marcar fallida
     [RelayCommand(CanExecute = nameof(PuedeMarcarFallida))]
     private async Task MarcarFallidaAsync()
     {
@@ -125,11 +137,22 @@ public partial class ParadaDetalleViewModel : ObservableObject
             return;
         }
 
+        // N3: Cuadro de diálogo de confirmación
+        bool confirmar = await Shell.Current.DisplayAlert(
+            "Confirmación",
+            "¿Estás seguro de que deseas reportar esta parada como FALLIDA?",
+            "Sí, reportar",
+            "Cancelar");
+
+        if (!confirmar) return;
+
         try
         {
             IsGuardando = true;
             Parada.Estado = EstadoEntrega.Fallida;
             Parada.RazonFallo = RazonFallo;
+            // N11: Incrementar contador de intentos fallidos
+            Parada.IntentosFallidos++;
             Parada.ModificadoEn = DateTime.Now;
             await _paradasDatabase.SaveParadaAsync(Parada);
             await Shell.Current.GoToAsync("..");

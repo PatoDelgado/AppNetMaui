@@ -13,6 +13,13 @@ public class Parada
     public string Direccion { get; set; } = "";
     public EstadoEntrega Estado { get; set; } = EstadoEntrega.Pendiente;
     public string? RazonFallo { get; set; }
+
+    // N9: Guardar quién recibió el paquete al entregar
+    public string? QuienRecibio { get; set; }
+
+    // N11: Contar intentos fallidos por parada
+    public int IntentosFallidos { get; set; } = 0;
+
     public DateTime ModificadoEn { get; set; } = DateTime.Now;
 
     public double? Latitud { get; set; }

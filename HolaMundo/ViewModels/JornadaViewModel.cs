@@ -45,15 +45,13 @@ public partial class JornadaViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(TextoBotonTurno))]
     private Turno? _turnoActivo;
 
-    // Reto extra 6.1: Toggle para ocultar entregadas
     [ObservableProperty]
     private bool _ocultarEntregadas = false;
 
-    // Reto opcional Ejercicio 7: Filtro por estado (Todas, Pendientes, Entregadas, Fallidas)
+    // O2: Filtrar por Todas/Pendientes/Entregadas/Fallidas
     [ObservableProperty]
     private string _filtroSeleccionado = "Todas";
 
-    // Reto 6.5: Ordenar numéricamente por distancia (más cercana primero)
     [ObservableProperty]
     private bool _ordenarPorCercania = false;
 
@@ -106,13 +104,12 @@ public partial class JornadaViewModel : ObservableObject
     {
         IEnumerable<Parada> filtradas = _paradasCompletas;
 
-        // Filtro por Switch "Ocultar entregadas"
         if (OcultarEntregadas)
         {
             filtradas = filtradas.Where(p => p.Estado != EstadoEntrega.Entregada);
         }
 
-        // Filtro por selector de estado (Reto Ejercicio 7)
+        // O2: Aplicar filtro seleccionado
         filtradas = FiltroSeleccionado switch
         {
             "Pendientes" => filtradas.Where(p => p.Estado == EstadoEntrega.Pendiente),
@@ -121,7 +118,6 @@ public partial class JornadaViewModel : ObservableObject
             _            => filtradas,
         };
 
-        // Ordenamiento numérico (Reto Ejercicio 6.5)
         IEnumerable<Parada> ordenadas;
         if (OrdenarPorCercania)
         {
@@ -254,7 +250,6 @@ public partial class JornadaViewModel : ObservableObject
         EntregasEsteMes = todas.Count(p => p.Estado == EstadoEntrega.Entregada && p.ModificadoEn >= desdeMes);
     }
 
-    // Reto 6.2: Cerrar sesión
     [RelayCommand]
     private async Task CerrarSesionAsync()
     {

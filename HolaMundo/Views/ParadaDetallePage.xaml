@@ -9,11 +9,9 @@
     <ScrollView>
         <VerticalStackLayout Padding="20" Spacing="16">
 
-            <!-- Información del cliente y dirección -->
             <Label Text="{Binding Parada.Cliente}" FontSize="24" FontAttributes="Bold" />
             <Label Text="{Binding Parada.Direccion}" Style="{StaticResource TextoSecundario}" />
 
-            <!-- Estado actual con Converter -->
             <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
                 <Label Text="Estado actual:" FontAttributes="Bold" FontSize="15" VerticalOptions="Center" />
                 <Label Text="{Binding Parada.Estado, Converter={StaticResource EstadoADisplay}}"
@@ -21,7 +19,19 @@
                        FontAttributes="Bold" FontSize="15" VerticalOptions="Center" />
             </HorizontalStackLayout>
 
-            <!-- Banner informativo si ya fue entregada (No editable) -->
+            <!-- N11: Mostrar Intentos Fallidos acumulados -->
+            <Border IsVisible="{Binding TieneIntentosFallidos}"
+                    BackgroundColor="#FFF8E1"
+                    Stroke="#FFA000"
+                    Padding="10"
+                    StrokeShape="RoundRectangle 8">
+                <Label Text="{Binding Parada.IntentosFallidos, StringFormat='⚠️ Esta parada lleva {0} intento(s) fallido(s)'}"
+                       TextColor="#FF6F00"
+                       FontAttributes="Bold"
+                       FontSize="12"
+                       HorizontalOptions="Center" />
+            </Border>
+
             <Border IsVisible="{Binding EsEntregada}"
                     BackgroundColor="#E8F5E9"
                     Stroke="#2E7D32"
@@ -32,13 +42,17 @@
                            TextColor="#2E7D32"
                            FontAttributes="Bold"
                            FontSize="15" />
-                    <Label Text="Esta parada ya fue entregada con éxito. El registro está cerrado y no se puede modificar."
+                    <!-- N9: Mostrar quién recibió -->
+                    <Label Text="{Binding Parada.QuienRecibio, StringFormat='Recibió: {0}'}"
                            TextColor="#1B5E20"
+                           FontAttributes="Bold"
                            FontSize="13" />
+                    <Label Text="Esta parada ya fue entregada con éxito. El registro está cerrado y no se puede modificar."
+                           TextColor="#2E7D32"
+                           FontSize="12" />
                 </VerticalStackLayout>
             </Border>
 
-            <!-- Banner informativo si la parada falló (con tiempo transcurrido en fallo) -->
             <Border IsVisible="{Binding EsFallida}"
                     BackgroundColor="#FFEBEE"
                     Stroke="#C62828"
@@ -55,12 +69,10 @@
                     <Label Text="{Binding TiempoEnFallo}"
                            TextColor="#D32F2F"
                            FontSize="11"
-                           FontAttributes="Italic"
-                           IsVisible="{Binding TiempoEnFallo, Converter={x:Static String.IsNullOrEmpty}, ConverterParameter=invert}" />
+                           FontAttributes="Italic" />
                 </VerticalStackLayout>
             </Border>
 
-            <!-- Botón Reintentar (Comando oficial Ejercicio 7 y reto de Fallida a Pendiente) -->
             <Button Text="🔄 Reintentar entrega"
                     Command="{Binding ReintentarCommand}"
                     BackgroundColor="DarkGoldenrod"
@@ -70,11 +82,18 @@
 
             <BoxView HeightRequest="1" BackgroundColor="LightGray" Margin="0,8" />
 
-            <!-- Sección de Acciones (Oculta si ya fue entregada) -->
             <VerticalStackLayout IsVisible="{Binding EsEditable}" Spacing="14">
                 <Label Text="Marcar resultado de entrega:" FontAttributes="Bold" FontSize="16" />
 
-                <!-- Razón de fallo requerida para habilitar Marcar Fallida -->
+                <!-- N9: Campo para registrar quién recibe el paquete -->
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Persona que recibe el paquete (opcional, por defecto es el cliente):"
+                           FontSize="12"
+                           TextColor="Gray" />
+                    <Entry Placeholder="Nombre de quien recibe..."
+                           Text="{Binding QuienRecibio}" />
+                </VerticalStackLayout>
+
                 <VerticalStackLayout Spacing="4">
                     <Label Text="Razón de fallo (obligatoria para marcar como fallida):"
                            FontSize="12"
@@ -85,7 +104,6 @@
 
                 <Label Text="{Binding MensajeEstado}" TextColor="IndianRed" FontSize="13" />
 
-                <!-- Spinner mientras guarda en SQLite -->
                 <ActivityIndicator IsRunning="{Binding IsGuardando}"
                                    IsVisible="{Binding IsGuardando}"
                                    Color="#1C7293"
@@ -93,14 +111,14 @@
                                    HeightRequest="32"
                                    HorizontalOptions="Center" />
 
-                <!-- Botones principales -->
                 <Button Text="Marcar entregada"
                         Command="{Binding MarcarEntregadaCommand}"
                         BackgroundColor="#2E7D32"
                         TextColor="White"
                         FontAttributes="Bold" />
 
-                <Button Text="Marcar fallida"
+                <!-- N3: Botón con confirmación -->
+                <Button Text="Marcar fallida (Pide confirmación)"
                         Command="{Binding MarcarFallidaCommand}"
                         BackgroundColor="#C62828"
                         TextColor="White"
